@@ -7,11 +7,12 @@ import hashlib
 from urllib.parse import urlencode
 import requests
 import schedule
+import datetime
 import time
 
-#ip주소 확인
-ip = requests.get("https://api.ipify.org").text
-print("My public IP address : ", ip)
+
+# 시작 메세지 전송(향후 슬랙 추가)
+print("autotrade start")
 
 #업비트 API
 os.environ['UPBIT_OPEN_API_ACCESS_KEY'] = 'user_access_key'
@@ -19,7 +20,6 @@ os.environ['UPBIT_OPEN_API_SECRET_KEY'] = 'user_secret_key'
 access_key = os.environ['UPBIT_OPEN_API_ACCESS_KEY']
 secret_key = os.environ['UPBIT_OPEN_API_SECRET_KEY']
 server_url = "https://api.upbit.com"
-
 payload = {
     'access_key': access_key,
     'nonce': str(uuid.uuid4()),
@@ -33,17 +33,20 @@ res = requests.get(server_url + "/v1/accounts", headers=headers)
 df_balance = DataFrame(res.json())
 balance_KRW = float(df_balance.head(1)["balance"])
 
-#리스트 종목 시장가 매수 함수
-def bid():
-    print('bid_timing')
-    #시세 조회 // 하위 5개종목 리스트 생성
+#시세 조회 // 하위 5개종목 리스트 생성
+def create_market_list():
     krw_tickers = pyupbit.get_tickers("KRW")
     url = "https://api.upbit.com/v1/ticker"
     querystring = {"markets": krw_tickers}
     headers = {"Accept": "application/json"}
     response = requests.request("GET", url, headers=headers, params=querystring)
     df_markets = DataFrame(response.json())
+    global market_list
     market_list = list(df_markets.sort_values("signed_change_rate").head(5)["market"])
+
+#리스트 종목 시장가 매수 함수
+def bid(market_list):
+    print('bid_timing')
     for market in market_list:
         print(balance_KRW)
         print(market)
@@ -75,9 +78,10 @@ def bid():
         except:
             print('error')
         time.sleep(0.2)
+    return market_list
 
 #리스트 종목 시장가 매도 함수
-def sell():
+def sell(market_list):
     print('sell_timing')
     payload = {
     'access_key': access_key,
@@ -128,8 +132,9 @@ cur_time = time.ctime()
 print("시작시간 = " + cur_time)
 
 #main
-schedule.every().day.at("00:00").do(bid)
-schedule.every().day.at("09:00").do(sell)
+schedule.every().day.at("00:00").do(create_market_list)
+schedule.every().day.at("00:00").do(bid(market_list))
+schedule.every().day.at("09:00").do(sell(market_list))
 
 while True:
     schedule.run_pending()
