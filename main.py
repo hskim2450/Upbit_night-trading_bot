@@ -15,8 +15,8 @@ import time
 print("autotrade start")
 
 #업비트 API
-os.environ['UPBIT_OPEN_API_ACCESS_KEY'] = 'user_access_key'
-os.environ['UPBIT_OPEN_API_SECRET_KEY'] = 'user_secret_key'
+os.environ['UPBIT_OPEN_API_ACCESS_KEY'] = 'x5rKoYx3HSIwjZ1iT0yXyrqhuawQ1bW1oAnaS2St'
+os.environ['UPBIT_OPEN_API_SECRET_KEY'] = 'Dv474KbdePJoNdB96x0sq4jDczkbx1bNlupUdTiR'
 access_key = os.environ['UPBIT_OPEN_API_ACCESS_KEY']
 secret_key = os.environ['UPBIT_OPEN_API_SECRET_KEY']
 server_url = "https://api.upbit.com"
@@ -34,7 +34,12 @@ df_balance = DataFrame(res.json())
 balance_KRW = float(df_balance.head(1)["balance"])
 
 #시세 조회 // 하위 5개종목 리스트 생성
-def create_market_list():
+
+
+#리스트 종목 시장가 매수 함수
+def bid():
+    print('bid_timing')
+    #시세 조회 // 하위 5개종목 리스트 생성
     krw_tickers = pyupbit.get_tickers("KRW")
     url = "https://api.upbit.com/v1/ticker"
     querystring = {"markets": krw_tickers}
@@ -43,10 +48,6 @@ def create_market_list():
     df_markets = DataFrame(response.json())
     global market_list
     market_list = list(df_markets.sort_values("signed_change_rate").head(5)["market"])
-
-#리스트 종목 시장가 매수 함수
-def bid(market_list):
-    print('bid_timing')
     for market in market_list:
         print(balance_KRW)
         print(market)
@@ -81,7 +82,7 @@ def bid(market_list):
     return market_list
 
 #리스트 종목 시장가 매도 함수
-def sell(market_list):
+def sell():
     print('sell_timing')
     payload = {
     'access_key': access_key,
@@ -132,9 +133,8 @@ cur_time = time.ctime()
 print("시작시간 = " + cur_time)
 
 #main
-schedule.every().day.at("00:00").do(create_market_list)
-schedule.every().day.at("00:00").do(bid(market_list))
-schedule.every().day.at("09:00").do(sell(market_list))
+schedule.every().day.at("00:00").do(bid)
+schedule.every().day.at("09:00").do(sell)
 
 while True:
     schedule.run_pending()
