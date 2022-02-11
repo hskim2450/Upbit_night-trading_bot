@@ -15,8 +15,8 @@ import time
 print("autotrade start")
 
 #업비트 API
-os.environ['UPBIT_OPEN_API_ACCESS_KEY'] = 'x5rKoYx3HSIwjZ1iT0yXyrqhuawQ1bW1oAnaS2St'
-os.environ['UPBIT_OPEN_API_SECRET_KEY'] = 'Dv474KbdePJoNdB96x0sq4jDczkbx1bNlupUdTiR'
+os.environ['UPBIT_OPEN_API_ACCESS_KEY'] = 'User-access-key'
+os.environ['UPBIT_OPEN_API_SECRET_KEY'] = 'User-secret-key'
 access_key = os.environ['UPBIT_OPEN_API_ACCESS_KEY']
 secret_key = os.environ['UPBIT_OPEN_API_SECRET_KEY']
 server_url = "https://api.upbit.com"
