@@ -33,8 +33,6 @@ res = requests.get(server_url + "/v1/accounts", headers=headers)
 df_balance = DataFrame(res.json())
 balance_KRW = float(df_balance.head(1)["balance"])
 
-#시세 조회 // 하위 5개종목 리스트 생성
-
 
 #리스트 종목 시장가 매수 함수
 def bid():
