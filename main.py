@@ -41,21 +41,19 @@ def cur_balance():
     res = requests.get(server_url + "/v1/accounts", headers=headers)
     return DataFrame(res.json())
 
-#현재 계좌 원화
-df_balance = cur_balance()
-balance_KRW_before = float(df_balance.head(1)["balance"])
-
 #현재 계좌 내 원화 slack 전송 함수
 def post_cur_KRW():
     df_balance = cur_balance()
     balance_KRW = float(df_balance.head(1)["balance"])
     post_to_slack("cur_balance_KRW= " + str(balance_KRW))
+    return balance_KRW
 
 #리스트 종목 시장가 매수 함수
 def bid():
     cur_time = time.ctime()
     post_to_slack('매수시작. 시작시간 = ' + cur_time)
-    post_cur_KRW()
+    global balance_KRW_before
+    balance_KRW_before = post_cur_KRW()
     #시세 조회 // 하위 5개종목 리스트 생성
     krw_tickers = pyupbit.get_tickers("KRW")
     url = "https://api.upbit.com/v1/ticker"
@@ -67,7 +65,6 @@ def bid():
     market_list = list(df_markets.sort_values("signed_change_rate").head(5)["market"])
     post_to_slack("targeted market list =" + str(market_list))
     for market in market_list:
-        post_to_slack("targeted market = " + str(market))
         bid_price = str(int(balance_KRW_before/len(market_list)/1000)*1000) #매수규모 커지면 수수료 충분히 빼놔야 할듯
         try:
             query = {
@@ -102,14 +99,12 @@ def bid():
 def sell():
     cur_time = time.ctime()
     post_to_slack('매도시작. 시작시간 = ' + cur_time)
-    post_cur_KRW()
     df_balance = cur_balance()
     for market in market_list:
         is_market = 'KRW-' + df_balance['currency'] == market
         market_index = df_balance.index[is_market].tolist()[0]
         volume = df_balance.at[market_index, 'balance']
         post_to_slack('targeted market = ' + str(market))
-        post_to_slack('volume = ' + str(volume))
         try:
             query = {
                 'market': market,
@@ -132,21 +127,19 @@ def sell():
             headers = {"Authorization": authorize_token}
             res = requests.post(server_url + "/v1/orders", params=query, headers=headers)
             post_to_slack('sold ' + str(market))
-            post_cur_KRW()
         except:
             post_to_slack('error while selling')
             pass
         time.sleep(0.2)
     post_to_slack('매도 종료')
-    df_balance = cur_balance()
-    balance_KRW_after = float(df_balance.head(1)["balance"])
+    balance_KRW_after = post_cur_KRW()
     profit = balance_KRW_after - balance_KRW_before
     post_to_slack('당일 수익 = ' + str(profit) + '원')
     post_to_slack('당일 수익률 = ' + str(profit/balance_KRW_before*100) + '%')
 
 #main
-schedule.every().day.at("00:00").do(bid)
-schedule.every().day.at("09:00").do(sell)
+schedule.every().day.at("15:00").do(bid)
+schedule.every().day.at("00:00").do(sell)
 
 while True:
     schedule.run_pending()
