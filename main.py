@@ -51,24 +51,24 @@ def post_cur_KRW():
 
 #전날 상승 상위 5개 종목 추리는 함수
 def raised_list():
-    yesterday = datetime.now()-timedelta(days=1) 
-    time_yesterday = yesterday.strftime('%Y-%m-%d %H:%M:%S') #strftime은 localtime을 원하는 형태의 문자열로 바꿔주는 함수. (%H: 24h단위 시간)
-    yes_market_list = list()
-    yes_rate_list = list()
-    krw_tickers = pyupbit.get_tickers("KRW")
-    for market in krw_tickers:
-        url = "https://api.upbit.com/v1/candles/days?market={}&to={}&count=1".format(market, time_yesterday)
-        headers = {"Accept": "application/json"}
-        response = requests.request("GET", url, headers=headers)
-        try:
+    try:
+        yesterday = datetime.now()-timedelta(days=1) 
+        time_yesterday = yesterday.strftime('%Y-%m-%d %H:%M:%S') #strftime은 localtime을 원하는 형태의 문자열로 바꿔주는 함수. (%H: 24h단위 시간)
+        yes_market_list = list()
+        yes_rate_list = list()
+        krw_tickers = pyupbit.get_tickers("KRW")
+        for market in krw_tickers:
+            url = "https://api.upbit.com/v1/candles/days?market={}&to={}&count=1".format(market, time_yesterday)
+            headers = {"Accept": "application/json"}
+            response = requests.request("GET", url, headers=headers)
             yes_market_list.append(market)
             yes_rate_list.append(response.json()[0]['change_rate'])
-        except Exception as e:
-            print(e)
-        time.sleep(0.1)
-    df_yes_market = DataFrame({'market': yes_market_list, 'change_rate': yes_rate_list})
-    raised_market_list = list(df_yes_market.sort_values('change_rate', ascending=False).head(5)["market"])
-    return raised_market_list
+            time.sleep(0.1)
+        df_yes_market = DataFrame({'market': yes_market_list, 'change_rate': yes_rate_list})
+        raised_market_list = list(df_yes_market.sort_values('change_rate', ascending=False).head(5)["market"])
+        return raised_market_list
+    except Exception as e:
+        post_to_slack(e)
 
 #리스트 종목 시장가 매수 함수
 def bid():
